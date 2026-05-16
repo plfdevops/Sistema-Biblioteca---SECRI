@@ -1,10 +1,10 @@
-"""Popular banco com livros de exemplo para teste."""
+"""Populate database with sample books for testing."""
 from database import init_db, get_connection
 from datetime import date, timedelta
 import random
 
-# (titulo, autor, categoria, ano)
-LIVROS = [
+# (title, author, category, year)
+BOOKS = [
     ("Dom Casmurro", "Machado de Assis", "Romance", 1899),
     ("Memórias Póstumas de Brás Cubas", "Machado de Assis", "Romance", 1881),
     ("O Alienista", "Machado de Assis", "Conto", 1882),
@@ -189,91 +189,90 @@ LIVROS = [
     ("Deserto dos Tártaros", "Dino Buzzati", "Romance", 1940),
 ]
 
-PESSOAS = [
-    "Ana Silva", "Carlos Oliveira", "Maria Santos", "João Pereira",
+PEOPLE = [
+    "Ana Silva", "Carlos Oliveira", "Maria Santos", "Joao Pereira",
     "Fernanda Costa", "Pedro Souza", "Juliana Lima", "Rafael Almeida",
-    "Beatriz Ferreira", "Lucas Rodrigues", "Camila Martins", "Bruno Araújo",
+    "Beatriz Ferreira", "Lucas Rodrigues", "Camila Martins", "Bruno Araujo",
     "Larissa Gomes", "Thiago Ribeiro", "Amanda Carvalho",
 ]
 
 
-def popular():
+def populate():
     init_db()
     conn = get_connection()
 
-    # Limpar dados existentes
-    conn.execute("DELETE FROM emprestimos")
-    conn.execute("DELETE FROM livros")
+    conn.execute("DELETE FROM loans")
+    conn.execute("DELETE FROM books")
     conn.commit()
 
-    # Inserir livros
-    for i, (titulo, autor, categoria, ano) in enumerate(LIVROS, start=1):
-        codigo = f"{i:03d}"
+    # Insert books
+    for i, (title, author, category, year) in enumerate(BOOKS, start=1):
+        code = f"{i:03d}"
         conn.execute(
-            "INSERT INTO livros (titulo, autor, categoria, ano, codigo) VALUES (?, ?, ?, ?, ?)",
-            (titulo, autor, categoria, ano, codigo),
+            "INSERT INTO books (title, author, category, year, code) VALUES (?, ?, ?, ?, ?)",
+            (title, author, category, year, code),
         )
     conn.commit()
 
-    # Alugar alguns livros aleatoriamente (~30 livros alugados)
-    livros = conn.execute("SELECT id FROM livros").fetchall()
-    alugados = random.sample(livros, 30)
+    # Loan some books (~30 loaned)
+    books = conn.execute("SELECT id FROM books").fetchall()
+    loaned = random.sample(books, 30)
 
-    # 10 com prazo vencido (atrasados)
-    for livro in alugados[:10]:
-        pessoa = random.choice(PESSOAS)
-        dias_atras = random.randint(15, 40)
-        prazo = random.randint(3, 7)
-        data = (date.today() - timedelta(days=dias_atras)).isoformat()
+    # 10 overdue (past deadline)
+    for book in loaned[:10]:
+        person = random.choice(PEOPLE)
+        days_ago = random.randint(15, 40)
+        deadline = random.randint(3, 7)
+        loan_date = (date.today() - timedelta(days=days_ago)).isoformat()
         conn.execute(
-            "INSERT INTO emprestimos (livro_id, pessoa, data_retirada, prazo_dias) VALUES (?, ?, ?, ?)",
-            (livro["id"], pessoa, data, prazo),
+            "INSERT INTO loans (book_id, person, loan_date, deadline_days) VALUES (?, ?, ?, ?)",
+            (book["id"], person, loan_date, deadline),
         )
-        conn.execute("UPDATE livros SET disponivel = 0 WHERE id = ?", (livro["id"],))
+        conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
-    # 10 com prazo ainda no prazo
-    for livro in alugados[10:20]:
-        pessoa = random.choice(PESSOAS)
-        dias_atras = random.randint(1, 3)
-        prazo = random.randint(14, 30)
-        data = (date.today() - timedelta(days=dias_atras)).isoformat()
+    # 10 within deadline
+    for book in loaned[10:20]:
+        person = random.choice(PEOPLE)
+        days_ago = random.randint(1, 3)
+        deadline = random.randint(14, 30)
+        loan_date = (date.today() - timedelta(days=days_ago)).isoformat()
         conn.execute(
-            "INSERT INTO emprestimos (livro_id, pessoa, data_retirada, prazo_dias) VALUES (?, ?, ?, ?)",
-            (livro["id"], pessoa, data, prazo),
+            "INSERT INTO loans (book_id, person, loan_date, deadline_days) VALUES (?, ?, ?, ?)",
+            (book["id"], person, loan_date, deadline),
         )
-        conn.execute("UPDATE livros SET disponivel = 0 WHERE id = ?", (livro["id"],))
+        conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
-    # 10 sem prazo definido
-    for livro in alugados[20:]:
-        pessoa = random.choice(PESSOAS)
-        dias_atras = random.randint(1, 20)
-        data = (date.today() - timedelta(days=dias_atras)).isoformat()
+    # 10 without deadline
+    for book in loaned[20:]:
+        person = random.choice(PEOPLE)
+        days_ago = random.randint(1, 20)
+        loan_date = (date.today() - timedelta(days=days_ago)).isoformat()
         conn.execute(
-            "INSERT INTO emprestimos (livro_id, pessoa, data_retirada) VALUES (?, ?, ?)",
-            (livro["id"], pessoa, data),
+            "INSERT INTO loans (book_id, person, loan_date) VALUES (?, ?, ?)",
+            (book["id"], person, loan_date),
         )
-        conn.execute("UPDATE livros SET disponivel = 0 WHERE id = ?", (livro["id"],))
+        conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
-    # Histórico de devoluções passadas
-    disponiveis = conn.execute("SELECT id FROM livros WHERE disponivel = 1").fetchall()
-    historico_livros = random.sample(disponiveis, 50)
-    for livro in historico_livros:
-        pessoa = random.choice(PESSOAS)
-        dias_retirada = random.randint(30, 90)
-        dias_devolucao = random.randint(1, 29)
-        data_ret = (date.today() - timedelta(days=dias_retirada)).isoformat()
-        data_dev = (date.today() - timedelta(days=dias_devolucao)).isoformat()
+    # Past return history
+    available = conn.execute("SELECT id FROM books WHERE available = 1").fetchall()
+    history_books = random.sample(available, 50)
+    for book in history_books:
+        person = random.choice(PEOPLE)
+        days_loan = random.randint(30, 90)
+        days_return = random.randint(1, 29)
+        loan_date = (date.today() - timedelta(days=days_loan)).isoformat()
+        return_date = (date.today() - timedelta(days=days_return)).isoformat()
         conn.execute(
-            "INSERT INTO emprestimos (livro_id, pessoa, data_retirada, data_devolucao) VALUES (?, ?, ?, ?)",
-            (livro["id"], pessoa, data_ret, data_dev),
+            "INSERT INTO loans (book_id, person, loan_date, return_date) VALUES (?, ?, ?, ?)",
+            (book["id"], person, loan_date, return_date),
         )
 
     conn.commit()
-    total = conn.execute("SELECT COUNT(*) as c FROM livros").fetchone()["c"]
-    alugados_count = conn.execute("SELECT COUNT(*) as c FROM livros WHERE disponivel = 0").fetchone()["c"]
+    total = conn.execute("SELECT COUNT(*) as c FROM books").fetchone()["c"]
+    loaned_count = conn.execute("SELECT COUNT(*) as c FROM books WHERE available = 0").fetchone()["c"]
     conn.close()
-    print(f"✅ Banco populado: {total} livros ({alugados_count} alugados)")
+    print(f"Done: {total} books ({loaned_count} loaned)")
 
 
 if __name__ == "__main__":
-    popular()
+    populate()

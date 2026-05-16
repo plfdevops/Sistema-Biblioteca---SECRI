@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import services
 
-# Cores
+# Colors
 BG = "#1e1e2e"
 BG_LIGHT = "#2a2a3e"
 FG = "#cdd6f4"
@@ -21,7 +21,7 @@ class App:
         self.root.configure(bg=BG)
         self._setup_style()
         self._build_ui()
-        self._atualizar_lista()
+        self._refresh_list()
 
     def _setup_style(self):
         style = ttk.Style()
@@ -37,42 +37,40 @@ class App:
         style.map("Treeview", background=[("selected", "#45475a")])
 
     def _build_ui(self):
-        # Titulo
         ttk.Label(self.root, text="Sistema de Biblioteca", font=("Segoe UI", 16, "bold"), foreground=ACCENT).pack(pady=(15, 5))
 
-        # Frame de acoes
         frame_top = ttk.Frame(self.root)
         frame_top.pack(fill="x", padx=15, pady=5)
 
-        ttk.Button(frame_top, text="+ Adicionar", command=self._dialog_adicionar).pack(side="left", padx=3)
-        ttk.Button(frame_top, text="Editar", command=self._dialog_editar).pack(side="left", padx=3)
-        ttk.Button(frame_top, text="X Remover", command=self._remover).pack(side="left", padx=3)
-        ttk.Button(frame_top, text="Alugar", command=self._dialog_alugar).pack(side="left", padx=3)
-        ttk.Button(frame_top, text="Devolver", command=self._devolver).pack(side="left", padx=3)
+        ttk.Button(frame_top, text="+ Adicionar", command=self._dialog_add).pack(side="left", padx=3)
+        ttk.Button(frame_top, text="Editar", command=self._dialog_edit).pack(side="left", padx=3)
+        ttk.Button(frame_top, text="X Remover", command=self._remove).pack(side="left", padx=3)
+        ttk.Button(frame_top, text="Alugar", command=self._dialog_loan).pack(side="left", padx=3)
+        ttk.Button(frame_top, text="Devolver", command=self._return).pack(side="left", padx=3)
 
-        # Filtro por categoria
+        # Category filter
         ttk.Label(frame_top, text="Categoria:").pack(side="left", padx=(15, 3))
-        self.var_categoria = tk.StringVar(value="Todas")
-        self.combo_cat = ttk.Combobox(frame_top, textvariable=self.var_categoria, width=15, state="readonly")
+        self.var_category = tk.StringVar(value="Todas")
+        self.combo_cat = ttk.Combobox(frame_top, textvariable=self.var_category, width=15, state="readonly")
         self.combo_cat.pack(side="left", padx=3)
-        self.combo_cat.bind("<<ComboboxSelected>>", lambda e: self._aplicar_filtros())
-        self._atualizar_categorias()
+        self.combo_cat.bind("<<ComboboxSelected>>", lambda e: self._apply_filters())
+        self._refresh_categories()
 
-        # Filtro por status
+        # Status filter
         ttk.Label(frame_top, text="Status:").pack(side="left", padx=(10, 3))
         self.var_status = tk.StringVar(value="Todos")
         combo_status = ttk.Combobox(frame_top, textvariable=self.var_status, width=12, state="readonly", values=["Todos", "Disponiveis", "Alugados", "Pendentes"])
         combo_status.pack(side="left", padx=3)
-        combo_status.bind("<<ComboboxSelected>>", lambda e: self._aplicar_filtros())
+        combo_status.bind("<<ComboboxSelected>>", lambda e: self._apply_filters())
 
-        # Busca
-        self.var_busca = tk.StringVar()
-        entry = ttk.Entry(frame_top, textvariable=self.var_busca, width=18)
+        # Search
+        self.var_search = tk.StringVar()
+        entry = ttk.Entry(frame_top, textvariable=self.var_search, width=18)
         entry.pack(side="right", padx=3)
-        entry.bind("<Return>", lambda e: self._buscar())
-        ttk.Button(frame_top, text="Buscar", command=self._buscar).pack(side="right", padx=3)
+        entry.bind("<Return>", lambda e: self._search())
+        ttk.Button(frame_top, text="Buscar", command=self._search).pack(side="right", padx=3)
 
-        # Tabela
+        # Table
         frame_tree = ttk.Frame(self.root)
         frame_tree.pack(fill="both", expand=True, padx=15, pady=10)
 
@@ -92,107 +90,96 @@ class App:
         self.tree.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
-        # Duplo clique para detalhes
-        self.tree.bind("<Double-1>", self._detalhes_livro)
+        self.tree.bind("<Double-1>", self._details)
 
-        # Barra de status
+        # Status bar
         self.status_var = tk.StringVar()
         ttk.Label(self.root, textvariable=self.status_var, font=("Segoe UI", 9), foreground=YELLOW).pack(pady=(0, 10))
 
-    def _atualizar_categorias(self):
-        cats = ["Todas"] + services.listar_categorias()
+    def _refresh_categories(self):
+        cats = ["Todas"] + services.list_categories()
         self.combo_cat["values"] = cats
 
-    def _filtrar_categoria(self):
-        self._aplicar_filtros()
-
-    def _aplicar_filtros(self):
-        cat = self.var_categoria.get()
+    def _apply_filters(self):
+        cat = self.var_category.get()
         status = self.var_status.get()
-        if cat == "Todas":
-            livros = services.listar_livros()
-        else:
-            livros = services.filtrar_por_categoria(cat)
+        books = services.filter_by_category(cat) if cat != "Todas" else services.list_books()
         if status == "Disponiveis":
-            livros = [l for l in livros if l["disponivel"]]
+            books = [b for b in books if b["available"]]
         elif status == "Alugados":
-            livros = [l for l in livros if not l["disponivel"] and not services.esta_atrasado(l["id"])]
+            books = [b for b in books if not b["available"] and not services.is_overdue(b["id"])]
         elif status == "Pendentes":
-            livros = [l for l in livros if not l["disponivel"] and services.esta_atrasado(l["id"])]
-        self._atualizar_lista(livros)
+            books = [b for b in books if not b["available"] and services.is_overdue(b["id"])]
+        self._refresh_list(books)
 
-    def _atualizar_lista(self, livros=None):
+    def _refresh_list(self, books=None):
         self.tree.delete(*self.tree.get_children())
-        dados = livros or services.listar_livros()
-        for l in dados:
-            if l["disponivel"]:
+        data = books or services.list_books()
+        for b in data:
+            if b["available"]:
                 status = "Disponivel"
-                tag = "disponivel"
-            elif services.esta_atrasado(l["id"]):
+                tag = "available"
+            elif services.is_overdue(b["id"]):
                 status = "Pendente"
-                tag = "pendente"
+                tag = "overdue"
             else:
                 status = "Alugado"
-                tag = "alugado"
-            self.tree.insert("", "end", iid=str(l["id"]), values=(l["codigo"] or "", l["titulo"], l["autor"], l["categoria"] or "", l["ano"] or "", status), tags=(tag,))
-        self.tree.tag_configure("disponivel", foreground=GREEN)
-        self.tree.tag_configure("alugado", foreground=RED)
-        self.tree.tag_configure("pendente", foreground=ORANGE)
-        total = len(dados)
-        alugados = sum(1 for l in dados if not l["disponivel"])
-        pendentes = sum(1 for l in dados if not l["disponivel"] and services.esta_atrasado(l["id"]))
-        self.status_var.set(f"Total: {total} | Disponiveis: {total - alugados} | Alugados: {alugados - pendentes} | Pendentes: {pendentes}")
+                tag = "loaned"
+            self.tree.insert("", "end", iid=str(b["id"]), values=(b["code"] or "", b["title"], b["author"], b["category"] or "", b["year"] or "", status), tags=(tag,))
+        self.tree.tag_configure("available", foreground=GREEN)
+        self.tree.tag_configure("loaned", foreground=RED)
+        self.tree.tag_configure("overdue", foreground=ORANGE)
+        total = len(data)
+        loaned = sum(1 for b in data if not b["available"])
+        overdue = sum(1 for b in data if not b["available"] and services.is_overdue(b["id"]))
+        self.status_var.set(f"Total: {total} | Disponiveis: {total - loaned} | Alugados: {loaned - overdue} | Pendentes: {overdue}")
 
-    def _selecionado_id(self):
+    def _selected_id(self):
         sel = self.tree.selection()
         if not sel:
             messagebox.showwarning("Aviso", "Selecione um livro.")
             return None
         return int(sel[0])
 
-    def _detalhes_livro(self, event):
+    def _details(self, event):
         sel = self.tree.selection()
         if not sel:
             return
-        livro_id = int(sel[0])
-        valores = self.tree.item(sel[0])["values"]
-
-        livro = services.obter_livro(livro_id)
-        if not livro:
+        book_id = int(sel[0])
+        book = services.get_book(book_id)
+        if not book:
             return
 
         win = tk.Toplevel(self.root)
-        win.title(f"Detalhes - {livro['titulo']}")
+        win.title(f"Detalhes - {book['title']}")
         win.geometry("450x350")
         win.configure(bg=BG)
         win.transient(self.root)
 
-        # Info do livro
         info_frame = tk.Frame(win, bg=BG_LIGHT, padx=15, pady=10)
         info_frame.pack(fill="x", padx=15, pady=10)
 
-        if livro["codigo"]:
-            tk.Label(info_frame, text=f"N: {livro['codigo']}", font=("Segoe UI", 9), bg=BG_LIGHT, fg=YELLOW).pack(anchor="w")
-        tk.Label(info_frame, text=livro["titulo"], font=("Segoe UI", 13, "bold"), bg=BG_LIGHT, fg=ACCENT).pack(anchor="w")
-        tk.Label(info_frame, text=f"Autor: {livro['autor']}", font=("Segoe UI", 10), bg=BG_LIGHT, fg=FG).pack(anchor="w")
-        tk.Label(info_frame, text=f"Categoria: {livro['categoria'] or 'N/A'}  |  Ano: {livro['ano'] or 'N/A'}", font=("Segoe UI", 10), bg=BG_LIGHT, fg=FG).pack(anchor="w")
+        if book["code"]:
+            tk.Label(info_frame, text=f"N: {book['code']}", font=("Segoe UI", 9), bg=BG_LIGHT, fg=YELLOW).pack(anchor="w")
+        tk.Label(info_frame, text=book["title"], font=("Segoe UI", 13, "bold"), bg=BG_LIGHT, fg=ACCENT).pack(anchor="w")
+        tk.Label(info_frame, text=f"Autor: {book['author']}", font=("Segoe UI", 10), bg=BG_LIGHT, fg=FG).pack(anchor="w")
+        tk.Label(info_frame, text=f"Categoria: {book['category'] or 'N/A'}  |  Ano: {book['year'] or 'N/A'}", font=("Segoe UI", 10), bg=BG_LIGHT, fg=FG).pack(anchor="w")
 
-        if livro["disponivel"]:
+        if book["available"]:
             status_color, status_text = GREEN, "Disponivel"
-        elif services.esta_atrasado(livro_id):
+        elif services.is_overdue(book_id):
             status_color, status_text = ORANGE, "Pendente"
         else:
             status_color, status_text = RED, "Alugado"
         tk.Label(info_frame, text=f"Status: {status_text}", font=("Segoe UI", 10, "bold"), bg=BG_LIGHT, fg=status_color).pack(anchor="w", pady=(5, 0))
 
-        # Historico de emprestimos
         tk.Label(win, text="Historico de Emprestimos", font=("Segoe UI", 11, "bold"), bg=BG, fg=YELLOW).pack(anchor="w", padx=15, pady=(5, 0))
 
         hist_frame = tk.Frame(win, bg=BG)
         hist_frame.pack(fill="both", expand=True, padx=15, pady=5)
 
-        historico = services.historico_emprestimos(livro_id)
-        if not historico:
+        history = services.loan_history(book_id)
+        if not history:
             tk.Label(hist_frame, text="Nenhum emprestimo registrado.", bg=BG, fg=FG, font=("Segoe UI", 10)).pack(pady=10)
         else:
             cols_h = ("Pessoa", "Retirada", "Devolucao", "Prazo")
@@ -203,53 +190,46 @@ class App:
             tree_h.column("Retirada", width=100)
             tree_h.column("Devolucao", width=100)
             tree_h.column("Prazo", width=70)
-            for h in historico:
-                dev = h["data_devolucao"] or "Pendente"
-                prazo = f"{h['prazo_dias']} dias" if h.get("prazo_dias") else "Sem prazo"
-                tree_h.insert("", "end", values=(h["pessoa"], h["data_retirada"], dev, prazo))
+            for h in history:
+                ret = h["return_date"] or "Pendente"
+                deadline = f"{h['deadline_days']} dias" if h.get("deadline_days") else "Sem prazo"
+                tree_h.insert("", "end", values=(h["person"], h["loan_date"], ret, deadline))
             tree_h.pack(fill="both", expand=True)
 
         ttk.Button(win, text="Fechar", command=win.destroy).pack(pady=8)
 
-    def _dialog_adicionar(self):
+    def _dialog_add(self):
         win = tk.Toplevel(self.root)
         win.title("Adicionar Livro")
         win.configure(bg=BG)
         win.transient(self.root)
         win.grab_set()
-        campos = {}
-        for i, (label, key) in enumerate([("N", "codigo"), ("Titulo*", "titulo"), ("Autor*", "autor"), ("Categoria", "categoria"), ("Ano", "ano")]):
+        fields = {}
+        for i, (label, key) in enumerate([("N", "code"), ("Titulo*", "title"), ("Autor*", "author"), ("Categoria", "category"), ("Ano", "year")]):
             tk.Label(win, text=label, bg=BG, fg=FG, font=("Segoe UI", 10)).grid(row=i, column=0, padx=10, pady=6, sticky="e")
             var = tk.StringVar()
             ttk.Entry(win, textvariable=var, width=30).grid(row=i, column=1, padx=10, pady=6)
-            campos[key] = var
+            fields[key] = var
 
-        def salvar():
-            t, a = campos["titulo"].get().strip(), campos["autor"].get().strip()
+        def save():
+            t, a = fields["title"].get().strip(), fields["author"].get().strip()
             if not t or not a:
                 messagebox.showerror("Erro", "Titulo e Autor sao obrigatorios.", parent=win)
                 return
-            ano = campos["ano"].get().strip()
-            services.adicionar_livro(t, a, campos["categoria"].get().strip(), int(ano) if ano.isdigit() else None, campos["codigo"].get().strip())
+            year = fields["year"].get().strip()
+            services.add_book(t, a, fields["category"].get().strip(), int(year) if year.isdigit() else None, fields["code"].get().strip())
             win.destroy()
-            self._atualizar_categorias()
-            self._atualizar_lista()
+            self._refresh_categories()
+            self._refresh_list()
 
-        ttk.Button(win, text="Salvar", command=salvar).grid(row=5, column=1, pady=12, sticky="e", padx=10)
+        ttk.Button(win, text="Salvar", command=save).grid(row=5, column=1, pady=12, sticky="e", padx=10)
 
-    def _remover(self):
-        lid = self._selecionado_id()
-        if lid and messagebox.askyesno("Confirmar", "Remover este livro e todo seu historico?"):
-            services.remover_livro(lid)
-            self._atualizar_categorias()
-            self._atualizar_lista()
-
-    def _dialog_editar(self):
-        lid = self._selecionado_id()
-        if not lid:
+    def _dialog_edit(self):
+        book_id = self._selected_id()
+        if not book_id:
             return
-        livro = services.obter_livro(lid)
-        if not livro:
+        book = services.get_book(book_id)
+        if not book:
             return
 
         win = tk.Toplevel(self.root)
@@ -257,30 +237,37 @@ class App:
         win.configure(bg=BG)
         win.transient(self.root)
         win.grab_set()
-        campos = {}
-        valores_atuais = [("N", "codigo", livro["codigo"] or ""), ("Titulo*", "titulo", livro["titulo"]), ("Autor*", "autor", livro["autor"]), ("Categoria", "categoria", livro["categoria"] or ""), ("Ano", "ano", str(livro["ano"]) if livro["ano"] else "")]
-        for i, (label, key, valor) in enumerate(valores_atuais):
+        fields = {}
+        current = [("N", "code", book["code"] or ""), ("Titulo*", "title", book["title"]), ("Autor*", "author", book["author"]), ("Categoria", "category", book["category"] or ""), ("Ano", "year", str(book["year"]) if book["year"] else "")]
+        for i, (label, key, value) in enumerate(current):
             tk.Label(win, text=label, bg=BG, fg=FG, font=("Segoe UI", 10)).grid(row=i, column=0, padx=10, pady=6, sticky="e")
-            var = tk.StringVar(value=valor)
+            var = tk.StringVar(value=value)
             ttk.Entry(win, textvariable=var, width=30).grid(row=i, column=1, padx=10, pady=6)
-            campos[key] = var
+            fields[key] = var
 
-        def salvar():
-            t, a = campos["titulo"].get().strip(), campos["autor"].get().strip()
+        def save():
+            t, a = fields["title"].get().strip(), fields["author"].get().strip()
             if not t or not a:
                 messagebox.showerror("Erro", "Titulo e Autor sao obrigatorios.", parent=win)
                 return
-            ano = campos["ano"].get().strip()
-            services.editar_livro(lid, t, a, campos["categoria"].get().strip(), int(ano) if ano.isdigit() else None, campos["codigo"].get().strip())
+            year = fields["year"].get().strip()
+            services.edit_book(book_id, t, a, fields["category"].get().strip(), int(year) if year.isdigit() else None, fields["code"].get().strip())
             win.destroy()
-            self._atualizar_categorias()
-            self._atualizar_lista()
+            self._refresh_categories()
+            self._refresh_list()
 
-        ttk.Button(win, text="Salvar", command=salvar).grid(row=5, column=1, pady=12, sticky="e", padx=10)
+        ttk.Button(win, text="Salvar", command=save).grid(row=5, column=1, pady=12, sticky="e", padx=10)
 
-    def _dialog_alugar(self):
-        lid = self._selecionado_id()
-        if not lid:
+    def _remove(self):
+        book_id = self._selected_id()
+        if book_id and messagebox.askyesno("Confirmar", "Remover este livro e todo seu historico?"):
+            services.remove_book(book_id)
+            self._refresh_categories()
+            self._refresh_list()
+
+    def _dialog_loan(self):
+        book_id = self._selected_id()
+        if not book_id:
             return
         win = tk.Toplevel(self.root)
         win.title("Alugar Livro")
@@ -289,41 +276,42 @@ class App:
         win.grab_set()
 
         tk.Label(win, text="Nome da pessoa:", bg=BG, fg=FG, font=("Segoe UI", 10)).grid(row=0, column=0, padx=10, pady=10, sticky="e")
-        var_pessoa = tk.StringVar()
-        ttk.Entry(win, textvariable=var_pessoa, width=25).grid(row=0, column=1, padx=10, pady=10)
+        var_person = tk.StringVar()
+        ttk.Entry(win, textvariable=var_person, width=25).grid(row=0, column=1, padx=10, pady=10)
 
         tk.Label(win, text="Prazo (dias):", bg=BG, fg=FG, font=("Segoe UI", 10)).grid(row=1, column=0, padx=10, pady=6, sticky="e")
-        var_prazo = tk.StringVar()
-        ttk.Entry(win, textvariable=var_prazo, width=10).grid(row=1, column=1, padx=10, pady=6, sticky="w")
+        var_deadline = tk.StringVar()
+        ttk.Entry(win, textvariable=var_deadline, width=10).grid(row=1, column=1, padx=10, pady=6, sticky="w")
         tk.Label(win, text="(opcional)", bg=BG, fg="#6c7086", font=("Segoe UI", 9)).grid(row=1, column=1, padx=(100, 0), pady=6, sticky="w")
 
-        def confirmar():
-            pessoa = var_pessoa.get().strip()
-            if not pessoa:
+        def confirm():
+            person = var_person.get().strip()
+            if not person:
                 messagebox.showerror("Erro", "Informe o nome.", parent=win)
                 return
-            prazo_str = var_prazo.get().strip()
-            prazo = int(prazo_str) if prazo_str.isdigit() else None
+            deadline_str = var_deadline.get().strip()
+            deadline = int(deadline_str) if deadline_str.isdigit() else None
             try:
-                services.alugar_livro(lid, pessoa, prazo)
+                services.loan_book(book_id, person, deadline)
             except ValueError as e:
                 messagebox.showerror("Erro", str(e), parent=win)
                 return
             win.destroy()
-            self._atualizar_lista()
+            self._refresh_list()
 
-        ttk.Button(win, text="Confirmar", command=confirmar).grid(row=2, column=1, pady=12, sticky="e", padx=10)
+        ttk.Button(win, text="Confirmar", command=confirm).grid(row=2, column=1, pady=12, sticky="e", padx=10)
 
-    def _devolver(self):
-        lid = self._selecionado_id()
-        if lid:
-            services.devolver_livro(lid)
-            self._atualizar_lista()
+    def _return(self):
+        book_id = self._selected_id()
+        if book_id:
+            services.return_book(book_id)
+            self._refresh_list()
 
-    def _buscar(self):
-        termo = self.var_busca.get().strip()
-        self.var_categoria.set("Todas")
-        if termo:
-            self._atualizar_lista(services.buscar_livros(termo))
+    def _search(self):
+        term = self.var_search.get().strip()
+        self.var_category.set("Todas")
+        self.var_status.set("Todos")
+        if term:
+            self._refresh_list(services.search_books(term))
         else:
-            self._atualizar_lista()
+            self._refresh_list()

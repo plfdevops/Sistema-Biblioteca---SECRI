@@ -2,125 +2,125 @@ from database import get_connection
 from datetime import date, timedelta
 
 
-def adicionar_livro(titulo, autor, categoria=None, ano=None, codigo=None):
+def add_book(title, author, category=None, year=None, code=None):
     conn = get_connection()
     conn.execute(
-        "INSERT INTO livros (titulo, autor, categoria, ano, codigo) VALUES (?, ?, ?, ?, ?)",
-        (titulo, autor, categoria or None, ano or None, codigo or None),
+        "INSERT INTO books (title, author, category, year, code) VALUES (?, ?, ?, ?, ?)",
+        (title, author, category or None, year or None, code or None),
     )
     conn.commit()
     conn.close()
 
 
-def remover_livro(livro_id):
+def remove_book(book_id):
     conn = get_connection()
-    conn.execute("DELETE FROM emprestimos WHERE livro_id = ?", (livro_id,))
-    conn.execute("DELETE FROM livros WHERE id = ?", (livro_id,))
+    conn.execute("DELETE FROM loans WHERE book_id = ?", (book_id,))
+    conn.execute("DELETE FROM books WHERE id = ?", (book_id,))
     conn.commit()
     conn.close()
 
 
-def editar_livro(livro_id, titulo, autor, categoria=None, ano=None, codigo=None):
+def edit_book(book_id, title, author, category=None, year=None, code=None):
     conn = get_connection()
     conn.execute(
-        "UPDATE livros SET titulo = ?, autor = ?, categoria = ?, ano = ?, codigo = ? WHERE id = ?",
-        (titulo, autor, categoria or None, ano or None, codigo or None, livro_id),
+        "UPDATE books SET title = ?, author = ?, category = ?, year = ?, code = ? WHERE id = ?",
+        (title, author, category or None, year or None, code or None, book_id),
     )
     conn.commit()
     conn.close()
 
 
-def obter_livro(livro_id):
+def get_book(book_id):
     conn = get_connection()
-    row = conn.execute("SELECT * FROM livros WHERE id = ?", (livro_id,)).fetchone()
+    row = conn.execute("SELECT * FROM books WHERE id = ?", (book_id,)).fetchone()
     conn.close()
     return dict(row) if row else None
 
 
-def alugar_livro(livro_id, pessoa, prazo_dias=None):
+def loan_book(book_id, person, deadline_days=None):
     conn = get_connection()
-    livro = conn.execute("SELECT disponivel FROM livros WHERE id = ?", (livro_id,)).fetchone()
-    if not livro:
+    book = conn.execute("SELECT available FROM books WHERE id = ?", (book_id,)).fetchone()
+    if not book:
         conn.close()
-        raise ValueError("Livro não encontrado")
-    if not livro["disponivel"]:
+        raise ValueError("Livro nao encontrado")
+    if not book["available"]:
         conn.close()
-        raise ValueError("Livro já está alugado")
+        raise ValueError("Livro ja esta alugado")
     conn.execute(
-        "INSERT INTO emprestimos (livro_id, pessoa, data_retirada, prazo_dias) VALUES (?, ?, ?, ?)",
-        (livro_id, pessoa, date.today().isoformat(), prazo_dias),
+        "INSERT INTO loans (book_id, person, loan_date, deadline_days) VALUES (?, ?, ?, ?)",
+        (book_id, person, date.today().isoformat(), deadline_days),
     )
-    conn.execute("UPDATE livros SET disponivel = 0 WHERE id = ?", (livro_id,))
+    conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book_id,))
     conn.commit()
     conn.close()
 
 
-def devolver_livro(livro_id):
+def return_book(book_id):
     conn = get_connection()
     conn.execute(
-        "UPDATE emprestimos SET data_devolucao = ? WHERE livro_id = ? AND data_devolucao IS NULL",
-        (date.today().isoformat(), livro_id),
+        "UPDATE loans SET return_date = ? WHERE book_id = ? AND return_date IS NULL",
+        (date.today().isoformat(), book_id),
     )
-    conn.execute("UPDATE livros SET disponivel = 1 WHERE id = ?", (livro_id,))
+    conn.execute("UPDATE books SET available = 1 WHERE id = ?", (book_id,))
     conn.commit()
     conn.close()
 
 
-def listar_livros():
+def list_books():
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM livros ORDER BY titulo").fetchall()
+    rows = conn.execute("SELECT * FROM books ORDER BY title").fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def buscar_livros(termo):
+def search_books(term):
     conn = get_connection()
     rows = conn.execute(
-        "SELECT * FROM livros WHERE titulo LIKE ? OR autor LIKE ? OR categoria LIKE ? ORDER BY titulo",
-        (f"%{termo}%", f"%{termo}%", f"%{termo}%"),
+        "SELECT * FROM books WHERE title LIKE ? OR author LIKE ? OR category LIKE ? ORDER BY title",
+        (f"%{term}%", f"%{term}%", f"%{term}%"),
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def filtrar_por_categoria(categoria):
+def filter_by_category(category):
     conn = get_connection()
-    rows = conn.execute("SELECT * FROM livros WHERE categoria = ? ORDER BY titulo", (categoria,)).fetchall()
+    rows = conn.execute("SELECT * FROM books WHERE category = ? ORDER BY title", (category,)).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def listar_categorias():
+def list_categories():
     conn = get_connection()
-    rows = conn.execute("SELECT DISTINCT categoria FROM livros WHERE categoria IS NOT NULL ORDER BY categoria").fetchall()
+    rows = conn.execute("SELECT DISTINCT category FROM books WHERE category IS NOT NULL ORDER BY category").fetchall()
     conn.close()
-    return [r["categoria"] for r in rows]
+    return [r["category"] for r in rows]
 
 
-def historico_emprestimos(livro_id):
+def loan_history(book_id):
     conn = get_connection()
     rows = conn.execute(
-        "SELECT * FROM emprestimos WHERE livro_id = ? ORDER BY data_retirada DESC",
-        (livro_id,),
+        "SELECT * FROM loans WHERE book_id = ? ORDER BY loan_date DESC",
+        (book_id,),
     ).fetchall()
     conn.close()
     return [dict(r) for r in rows]
 
 
-def emprestimo_ativo(livro_id):
+def active_loan(book_id):
     conn = get_connection()
     row = conn.execute(
-        "SELECT * FROM emprestimos WHERE livro_id = ? AND data_devolucao IS NULL",
-        (livro_id,),
+        "SELECT * FROM loans WHERE book_id = ? AND return_date IS NULL",
+        (book_id,),
     ).fetchone()
     conn.close()
     return dict(row) if row else None
 
 
-def esta_atrasado(livro_id):
-    emp = emprestimo_ativo(livro_id)
-    if not emp or not emp["prazo_dias"]:
+def is_overdue(book_id):
+    loan = active_loan(book_id)
+    if not loan or not loan["deadline_days"]:
         return False
-    data_ret = date.fromisoformat(emp["data_retirada"])
-    data_limite = data_ret + timedelta(days=emp["prazo_dias"])
-    return date.today() > data_limite
+    loan_date = date.fromisoformat(loan["loan_date"])
+    deadline = loan_date + timedelta(days=loan["deadline_days"])
+    return date.today() > deadline

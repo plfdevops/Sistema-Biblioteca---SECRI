@@ -14,34 +14,25 @@ def get_connection():
 def init_db():
     conn = get_connection()
     conn.executescript("""
-        CREATE TABLE IF NOT EXISTS livros (
+        CREATE TABLE IF NOT EXISTS books (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            codigo TEXT,
-            titulo TEXT NOT NULL,
-            autor TEXT NOT NULL,
-            categoria TEXT,
-            ano INTEGER,
-            disponivel INTEGER NOT NULL DEFAULT 1
+            code TEXT,
+            title TEXT NOT NULL,
+            author TEXT NOT NULL,
+            category TEXT,
+            year INTEGER,
+            available INTEGER NOT NULL DEFAULT 1
         );
 
-        CREATE TABLE IF NOT EXISTS emprestimos (
+        CREATE TABLE IF NOT EXISTS loans (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            livro_id INTEGER NOT NULL,
-            pessoa TEXT NOT NULL,
-            data_retirada TEXT NOT NULL,
-            data_devolucao TEXT,
-            prazo_dias INTEGER,
-            FOREIGN KEY (livro_id) REFERENCES livros(id)
+            book_id INTEGER NOT NULL,
+            person TEXT NOT NULL,
+            loan_date TEXT NOT NULL,
+            return_date TEXT,
+            deadline_days INTEGER,
+            FOREIGN KEY (book_id) REFERENCES books(id)
         );
     """)
-    # Migrações
-    try:
-        conn.execute("ALTER TABLE emprestimos ADD COLUMN prazo_dias INTEGER")
-    except Exception:
-        pass
-    try:
-        conn.execute("ALTER TABLE livros ADD COLUMN codigo TEXT")
-    except Exception:
-        pass
     conn.commit()
     conn.close()
