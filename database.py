@@ -16,6 +16,7 @@ def init_db():
     conn.executescript("""
         CREATE TABLE IF NOT EXISTS livros (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo TEXT,
             titulo TEXT NOT NULL,
             autor TEXT NOT NULL,
             categoria TEXT,
@@ -33,9 +34,13 @@ def init_db():
             FOREIGN KEY (livro_id) REFERENCES livros(id)
         );
     """)
-    # Migração: adicionar coluna prazo_dias se não existir
+    # Migrações
     try:
         conn.execute("ALTER TABLE emprestimos ADD COLUMN prazo_dias INTEGER")
+    except Exception:
+        pass
+    try:
+        conn.execute("ALTER TABLE livros ADD COLUMN codigo TEXT")
     except Exception:
         pass
     conn.commit()

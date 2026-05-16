@@ -76,11 +76,11 @@ class App:
         frame_tree = ttk.Frame(self.root)
         frame_tree.pack(fill="both", expand=True, padx=15, pady=10)
 
-        cols = ("ID", "Titulo", "Autor", "Categoria", "Ano", "Status")
+        cols = ("N", "Titulo", "Autor", "Categoria", "Ano", "Status")
         self.tree = ttk.Treeview(frame_tree, columns=cols, show="headings", selectmode="browse")
         for col in cols:
             self.tree.heading(col, text=col)
-        self.tree.column("ID", width=40, anchor="center")
+        self.tree.column("N", width=60, anchor="center")
         self.tree.column("Titulo", width=250)
         self.tree.column("Autor", width=180)
         self.tree.column("Categoria", width=120)
@@ -134,7 +134,7 @@ class App:
             else:
                 status = "Alugado"
                 tag = "alugado"
-            self.tree.insert("", "end", values=(l["id"], l["titulo"], l["autor"], l["categoria"] or "", l["ano"] or "", status), tags=(tag,))
+            self.tree.insert("", "end", iid=str(l["id"]), values=(l["codigo"] or "", l["titulo"], l["autor"], l["categoria"] or "", l["ano"] or "", status), tags=(tag,))
         self.tree.tag_configure("disponivel", foreground=GREEN)
         self.tree.tag_configure("alugado", foreground=RED)
         self.tree.tag_configure("pendente", foreground=ORANGE)
@@ -148,17 +148,21 @@ class App:
         if not sel:
             messagebox.showwarning("Aviso", "Selecione um livro.")
             return None
-        return int(self.tree.item(sel[0])["values"][0])
+        return int(sel[0])
 
     def _detalhes_livro(self, event):
         sel = self.tree.selection()
         if not sel:
             return
+        livro_id = int(sel[0])
         valores = self.tree.item(sel[0])["values"]
-        livro_id = int(valores[0])
+
+        livro = services.obter_livro(livro_id)
+        if not livro:
+            return
 
         win = tk.Toplevel(self.root)
-        win.title(f"Detalhes - {valores[1]}")
+        win.title(f"Detalhes - {livro['titulo']}")
         win.geometry("450x350")
         win.configure(bg=BG)
         win.transient(self.root)
@@ -167,18 +171,19 @@ class App:
         info_frame = tk.Frame(win, bg=BG_LIGHT, padx=15, pady=10)
         info_frame.pack(fill="x", padx=15, pady=10)
 
-        tk.Label(info_frame, text=str(valores[1]), font=("Segoe UI", 13, "bold"), bg=BG_LIGHT, fg=ACCENT).pack(anchor="w")
-        tk.Label(info_frame, text=f"Autor: {valores[2]}", font=("Segoe UI", 10), bg=BG_LIGHT, fg=FG).pack(anchor="w")
-        tk.Label(info_frame, text=f"Categoria: {valores[3] or 'N/A'}  |  Ano: {valores[4] or 'N/A'}", font=("Segoe UI", 10), bg=BG_LIGHT, fg=FG).pack(anchor="w")
+        if livro["codigo"]:
+            tk.Label(info_frame, text=f"N: {livro['codigo']}", font=("Segoe UI", 9), bg=BG_LIGHT, fg=YELLOW).pack(anchor="w")
+        tk.Label(info_frame, text=livro["titulo"], font=("Segoe UI", 13, "bold"), bg=BG_LIGHT, fg=ACCENT).pack(anchor="w")
+        tk.Label(info_frame, text=f"Autor: {livro['autor']}", font=("Segoe UI", 10), bg=BG_LIGHT, fg=FG).pack(anchor="w")
+        tk.Label(info_frame, text=f"Categoria: {livro['categoria'] or 'N/A'}  |  Ano: {livro['ano'] or 'N/A'}", font=("Segoe UI", 10), bg=BG_LIGHT, fg=FG).pack(anchor="w")
 
-        status_str = str(valores[5])
-        if status_str == "Disponivel":
-            status_color = GREEN
-        elif status_str == "Pendente":
-            status_color = ORANGE
+        if livro["disponivel"]:
+            status_color, status_text = GREEN, "Disponivel"
+        elif services.esta_atrasado(livro_id):
+            status_color, status_text = ORANGE, "Pendente"
         else:
-            status_color = RED
-        tk.Label(info_frame, text=f"Status: {status_str}", font=("Segoe UI", 10, "bold"), bg=BG_LIGHT, fg=status_color).pack(anchor="w", pady=(5, 0))
+            status_color, status_text = RED, "Alugado"
+        tk.Label(info_frame, text=f"Status: {status_text}", font=("Segoe UI", 10, "bold"), bg=BG_LIGHT, fg=status_color).pack(anchor="w", pady=(5, 0))
 
         # Historico de emprestimos
         tk.Label(win, text="Historico de Emprestimos", font=("Segoe UI", 11, "bold"), bg=BG, fg=YELLOW).pack(anchor="w", padx=15, pady=(5, 0))
@@ -213,7 +218,7 @@ class App:
         win.transient(self.root)
         win.grab_set()
         campos = {}
-        for i, (label, key) in enumerate([("Titulo*", "titulo"), ("Autor*", "autor"), ("Categoria", "categoria"), ("Ano", "ano")]):
+        for i, (label, key) in enumerate([("N", "codigo"), ("Titulo*", "titulo"), ("Autor*", "autor"), ("Categoria", "categoria"), ("Ano", "ano")]):
             tk.Label(win, text=label, bg=BG, fg=FG, font=("Segoe UI", 10)).grid(row=i, column=0, padx=10, pady=6, sticky="e")
             var = tk.StringVar()
             ttk.Entry(win, textvariable=var, width=30).grid(row=i, column=1, padx=10, pady=6)
@@ -225,12 +230,12 @@ class App:
                 messagebox.showerror("Erro", "Titulo e Autor sao obrigatorios.", parent=win)
                 return
             ano = campos["ano"].get().strip()
-            services.adicionar_livro(t, a, campos["categoria"].get().strip(), int(ano) if ano.isdigit() else None)
+            services.adicionar_livro(t, a, campos["categoria"].get().strip(), int(ano) if ano.isdigit() else None, campos["codigo"].get().strip())
             win.destroy()
             self._atualizar_categorias()
             self._atualizar_lista()
 
-        ttk.Button(win, text="Salvar", command=salvar).grid(row=4, column=1, pady=12, sticky="e", padx=10)
+        ttk.Button(win, text="Salvar", command=salvar).grid(row=5, column=1, pady=12, sticky="e", padx=10)
 
     def _remover(self):
         lid = self._selecionado_id()
@@ -253,7 +258,7 @@ class App:
         win.transient(self.root)
         win.grab_set()
         campos = {}
-        valores_atuais = [("Titulo*", "titulo", livro["titulo"]), ("Autor*", "autor", livro["autor"]), ("Categoria", "categoria", livro["categoria"] or ""), ("Ano", "ano", str(livro["ano"]) if livro["ano"] else "")]
+        valores_atuais = [("N", "codigo", livro["codigo"] or ""), ("Titulo*", "titulo", livro["titulo"]), ("Autor*", "autor", livro["autor"]), ("Categoria", "categoria", livro["categoria"] or ""), ("Ano", "ano", str(livro["ano"]) if livro["ano"] else "")]
         for i, (label, key, valor) in enumerate(valores_atuais):
             tk.Label(win, text=label, bg=BG, fg=FG, font=("Segoe UI", 10)).grid(row=i, column=0, padx=10, pady=6, sticky="e")
             var = tk.StringVar(value=valor)
@@ -266,12 +271,12 @@ class App:
                 messagebox.showerror("Erro", "Titulo e Autor sao obrigatorios.", parent=win)
                 return
             ano = campos["ano"].get().strip()
-            services.editar_livro(lid, t, a, campos["categoria"].get().strip(), int(ano) if ano.isdigit() else None)
+            services.editar_livro(lid, t, a, campos["categoria"].get().strip(), int(ano) if ano.isdigit() else None, campos["codigo"].get().strip())
             win.destroy()
             self._atualizar_categorias()
             self._atualizar_lista()
 
-        ttk.Button(win, text="Salvar", command=salvar).grid(row=4, column=1, pady=12, sticky="e", padx=10)
+        ttk.Button(win, text="Salvar", command=salvar).grid(row=5, column=1, pady=12, sticky="e", padx=10)
 
     def _dialog_alugar(self):
         lid = self._selecionado_id()

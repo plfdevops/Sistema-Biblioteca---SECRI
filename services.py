@@ -2,11 +2,11 @@ from database import get_connection
 from datetime import date, timedelta
 
 
-def adicionar_livro(titulo, autor, categoria=None, ano=None):
+def adicionar_livro(titulo, autor, categoria=None, ano=None, codigo=None):
     conn = get_connection()
     conn.execute(
-        "INSERT INTO livros (titulo, autor, categoria, ano) VALUES (?, ?, ?, ?)",
-        (titulo, autor, categoria or None, ano or None),
+        "INSERT INTO livros (titulo, autor, categoria, ano, codigo) VALUES (?, ?, ?, ?, ?)",
+        (titulo, autor, categoria or None, ano or None, codigo or None),
     )
     conn.commit()
     conn.close()
@@ -20,11 +20,11 @@ def remover_livro(livro_id):
     conn.close()
 
 
-def editar_livro(livro_id, titulo, autor, categoria=None, ano=None):
+def editar_livro(livro_id, titulo, autor, categoria=None, ano=None, codigo=None):
     conn = get_connection()
     conn.execute(
-        "UPDATE livros SET titulo = ?, autor = ?, categoria = ?, ano = ? WHERE id = ?",
-        (titulo, autor, categoria or None, ano or None, livro_id),
+        "UPDATE livros SET titulo = ?, autor = ?, categoria = ?, ano = ?, codigo = ? WHERE id = ?",
+        (titulo, autor, categoria or None, ano or None, codigo or None, livro_id),
     )
     conn.commit()
     conn.close()
