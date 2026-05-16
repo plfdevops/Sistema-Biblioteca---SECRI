@@ -54,8 +54,15 @@ class App:
         self.var_categoria = tk.StringVar(value="Todas")
         self.combo_cat = ttk.Combobox(frame_top, textvariable=self.var_categoria, width=15, state="readonly")
         self.combo_cat.pack(side="left", padx=3)
-        self.combo_cat.bind("<<ComboboxSelected>>", lambda e: self._filtrar_categoria())
+        self.combo_cat.bind("<<ComboboxSelected>>", lambda e: self._aplicar_filtros())
         self._atualizar_categorias()
+
+        # Filtro por status
+        ttk.Label(frame_top, text="Status:").pack(side="left", padx=(10, 3))
+        self.var_status = tk.StringVar(value="Todos")
+        combo_status = ttk.Combobox(frame_top, textvariable=self.var_status, width=12, state="readonly", values=["Todos", "Disponiveis", "Alugados"])
+        combo_status.pack(side="left", padx=3)
+        combo_status.bind("<<ComboboxSelected>>", lambda e: self._aplicar_filtros())
 
         # Busca
         self.var_busca = tk.StringVar()
@@ -96,11 +103,20 @@ class App:
         self.combo_cat["values"] = cats
 
     def _filtrar_categoria(self):
+        self._aplicar_filtros()
+
+    def _aplicar_filtros(self):
         cat = self.var_categoria.get()
+        status = self.var_status.get()
         if cat == "Todas":
-            self._atualizar_lista()
+            livros = services.listar_livros()
         else:
-            self._atualizar_lista(services.filtrar_por_categoria(cat))
+            livros = services.filtrar_por_categoria(cat)
+        if status == "Disponiveis":
+            livros = [l for l in livros if l["disponivel"]]
+        elif status == "Alugados":
+            livros = [l for l in livros if not l["disponivel"]]
+        self._atualizar_lista(livros)
 
     def _atualizar_lista(self, livros=None):
         self.tree.delete(*self.tree.get_children())
