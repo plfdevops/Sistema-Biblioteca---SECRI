@@ -29,8 +29,14 @@ def init_db():
             pessoa TEXT NOT NULL,
             data_retirada TEXT NOT NULL,
             data_devolucao TEXT,
+            prazo_dias INTEGER,
             FOREIGN KEY (livro_id) REFERENCES livros(id)
         );
     """)
+    # Migração: adicionar coluna prazo_dias se não existir
+    try:
+        conn.execute("ALTER TABLE emprestimos ADD COLUMN prazo_dias INTEGER")
+    except Exception:
+        pass
     conn.commit()
     conn.close()
