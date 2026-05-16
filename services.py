@@ -20,6 +20,23 @@ def remover_livro(livro_id):
     conn.close()
 
 
+def editar_livro(livro_id, titulo, autor, categoria=None, ano=None):
+    conn = get_connection()
+    conn.execute(
+        "UPDATE livros SET titulo = ?, autor = ?, categoria = ?, ano = ? WHERE id = ?",
+        (titulo, autor, categoria or None, ano or None, livro_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def obter_livro(livro_id):
+    conn = get_connection()
+    row = conn.execute("SELECT * FROM livros WHERE id = ?", (livro_id,)).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
 def alugar_livro(livro_id, pessoa, prazo_dias=None):
     conn = get_connection()
     livro = conn.execute("SELECT disponivel FROM livros WHERE id = ?", (livro_id,)).fetchone()

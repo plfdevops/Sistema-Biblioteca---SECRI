@@ -45,6 +45,7 @@ class App:
         frame_top.pack(fill="x", padx=15, pady=5)
 
         ttk.Button(frame_top, text="+ Adicionar", command=self._dialog_adicionar).pack(side="left", padx=3)
+        ttk.Button(frame_top, text="Editar", command=self._dialog_editar).pack(side="left", padx=3)
         ttk.Button(frame_top, text="X Remover", command=self._remover).pack(side="left", padx=3)
         ttk.Button(frame_top, text="Alugar", command=self._dialog_alugar).pack(side="left", padx=3)
         ttk.Button(frame_top, text="Devolver", command=self._devolver).pack(side="left", padx=3)
@@ -139,7 +140,8 @@ class App:
         self.tree.tag_configure("pendente", foreground=ORANGE)
         total = len(dados)
         alugados = sum(1 for l in dados if not l["disponivel"])
-        self.status_var.set(f"Total: {total} livros | Disponiveis: {total - alugados} | Alugados: {alugados}")
+        pendentes = sum(1 for l in dados if not l["disponivel"] and services.esta_atrasado(l["id"]))
+        self.status_var.set(f"Total: {total} | Disponiveis: {total - alugados} | Alugados: {alugados - pendentes} | Pendentes: {pendentes}")
 
     def _selecionado_id(self):
         sel = self.tree.selection()
@@ -236,6 +238,40 @@ class App:
             services.remover_livro(lid)
             self._atualizar_categorias()
             self._atualizar_lista()
+
+    def _dialog_editar(self):
+        lid = self._selecionado_id()
+        if not lid:
+            return
+        livro = services.obter_livro(lid)
+        if not livro:
+            return
+
+        win = tk.Toplevel(self.root)
+        win.title("Editar Livro")
+        win.configure(bg=BG)
+        win.transient(self.root)
+        win.grab_set()
+        campos = {}
+        valores_atuais = [("Titulo*", "titulo", livro["titulo"]), ("Autor*", "autor", livro["autor"]), ("Categoria", "categoria", livro["categoria"] or ""), ("Ano", "ano", str(livro["ano"]) if livro["ano"] else "")]
+        for i, (label, key, valor) in enumerate(valores_atuais):
+            tk.Label(win, text=label, bg=BG, fg=FG, font=("Segoe UI", 10)).grid(row=i, column=0, padx=10, pady=6, sticky="e")
+            var = tk.StringVar(value=valor)
+            ttk.Entry(win, textvariable=var, width=30).grid(row=i, column=1, padx=10, pady=6)
+            campos[key] = var
+
+        def salvar():
+            t, a = campos["titulo"].get().strip(), campos["autor"].get().strip()
+            if not t or not a:
+                messagebox.showerror("Erro", "Titulo e Autor sao obrigatorios.", parent=win)
+                return
+            ano = campos["ano"].get().strip()
+            services.editar_livro(lid, t, a, campos["categoria"].get().strip(), int(ano) if ano.isdigit() else None)
+            win.destroy()
+            self._atualizar_categorias()
+            self._atualizar_lista()
+
+        ttk.Button(win, text="Salvar", command=salvar).grid(row=4, column=1, pady=12, sticky="e", padx=10)
 
     def _dialog_alugar(self):
         lid = self._selecionado_id()
