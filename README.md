@@ -27,16 +27,12 @@ Sistema de gerenciamento de biblioteca desenvolvido para o projeto de extensão 
 ### Pré-requisitos
 
 - Python 3.8 ou superior
-- Tkinter (já vem instalado com Python no Windows)
 
 ### No Windows
 
 ```bash
-# Clonar o repositório
 git clone https://github.com/plfdevops/Sistema-Biblioteca---SECRI.git
 cd Sistema-Biblioteca---SECRI
-
-# Executar
 python main.py
 ```
 
@@ -45,11 +41,7 @@ python main.py
 ```bash
 git clone https://github.com/plfdevops/Sistema-Biblioteca---SECRI.git
 cd Sistema-Biblioteca---SECRI
-
-# Instalar tkinter se necessário (Ubuntu/Debian)
 sudo apt install python3-tk
-
-# Executar
 python3 main.py
 ```
 
@@ -58,7 +50,6 @@ python3 main.py
 ## Gerar executável (.exe) para Windows
 
 ```bash
-# Executar o script de build
 build.bat
 ```
 
