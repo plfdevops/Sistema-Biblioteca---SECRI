@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import services
 
-# Colors
 BG = "#1e1e2e"
 BG_LIGHT = "#2a2a3e"
 FG = "#cdd6f4"
@@ -48,7 +47,6 @@ class App:
         ttk.Button(frame_top, text="Alugar", command=self._dialog_loan).pack(side="left", padx=3)
         ttk.Button(frame_top, text="Devolver", command=self._return).pack(side="left", padx=3)
 
-        # Category filter
         ttk.Label(frame_top, text="Categoria:").pack(side="left", padx=(15, 3))
         self.var_category = tk.StringVar(value="Todas")
         self.combo_cat = ttk.Combobox(frame_top, textvariable=self.var_category, width=15, state="readonly")
@@ -56,21 +54,18 @@ class App:
         self.combo_cat.bind("<<ComboboxSelected>>", lambda e: self._apply_filters())
         self._refresh_categories()
 
-        # Status filter
         ttk.Label(frame_top, text="Status:").pack(side="left", padx=(10, 3))
         self.var_status = tk.StringVar(value="Todos")
         combo_status = ttk.Combobox(frame_top, textvariable=self.var_status, width=12, state="readonly", values=["Todos", "Disponiveis", "Alugados", "Pendentes"])
         combo_status.pack(side="left", padx=3)
         combo_status.bind("<<ComboboxSelected>>", lambda e: self._apply_filters())
 
-        # Search
         self.var_search = tk.StringVar()
         entry = ttk.Entry(frame_top, textvariable=self.var_search, width=18)
         entry.pack(side="right", padx=3)
         entry.bind("<Return>", lambda e: self._search())
         ttk.Button(frame_top, text="Buscar", command=self._search).pack(side="right", padx=3)
 
-        # Table
         frame_tree = ttk.Frame(self.root)
         frame_tree.pack(fill="both", expand=True, padx=15, pady=10)
 
@@ -92,7 +87,6 @@ class App:
 
         self.tree.bind("<Double-1>", self._details)
 
-        # Status bar
         self.status_var = tk.StringVar()
         ttk.Label(self.root, textvariable=self.status_var, font=("Segoe UI", 9), foreground=YELLOW).pack(pady=(0, 10))
 

@@ -1,9 +1,7 @@
-"""Populate database with sample books for testing."""
 from database import init_db, get_connection
 from datetime import date, timedelta
 import random
 
-# (title, author, category, year)
 BOOKS = [
     ("Dom Casmurro", "Machado de Assis", "Romance", 1899),
     ("Memórias Póstumas de Brás Cubas", "Machado de Assis", "Romance", 1881),
@@ -205,7 +203,6 @@ def populate():
     conn.execute("DELETE FROM books")
     conn.commit()
 
-    # Insert books
     for i, (title, author, category, year) in enumerate(BOOKS, start=1):
         code = f"{i:03d}"
         conn.execute(
@@ -214,11 +211,9 @@ def populate():
         )
     conn.commit()
 
-    # Loan some books (~30 loaned)
     books = conn.execute("SELECT id FROM books").fetchall()
     loaned = random.sample(books, 30)
 
-    # 10 overdue (past deadline)
     for book in loaned[:10]:
         person = random.choice(PEOPLE)
         days_ago = random.randint(15, 40)
@@ -230,7 +225,6 @@ def populate():
         )
         conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
-    # 10 within deadline
     for book in loaned[10:20]:
         person = random.choice(PEOPLE)
         days_ago = random.randint(1, 3)
@@ -242,7 +236,6 @@ def populate():
         )
         conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
-    # 10 without deadline
     for book in loaned[20:]:
         person = random.choice(PEOPLE)
         days_ago = random.randint(1, 20)
@@ -253,7 +246,6 @@ def populate():
         )
         conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
-    # Past return history
     available = conn.execute("SELECT id FROM books WHERE available = 1").fetchall()
     history_books = random.sample(available, 50)
     for book in history_books:
