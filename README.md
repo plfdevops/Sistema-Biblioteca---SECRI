@@ -78,6 +78,16 @@ Isso cria livros de diversas categorias (Romance, Fantasia, Terror, Ficção Cie
 
 ---
 
+## Sobre o banco de dados
+
+O banco `biblioteca.db` é criado automaticamente na primeira vez que o sistema é aberto. Ele fica salvo **na mesma pasta** do programa.
+
+- Cada máquina tem o seu próprio banco — os dados não são compartilhados entre computadores
+- Se quiser transferir os dados para outro PC, basta copiar o arquivo `biblioteca.db` junto com o executável
+- O arquivo `biblioteca.db` **não sobe pro GitHub** (está no `.gitignore`) — cada instalação começa vazia
+
+---
+
 ## Estrutura do projeto
 
 ```
@@ -88,6 +98,7 @@ Isso cria livros de diversas categorias (Romance, Fantasia, Terror, Ficção Cie
 │   └── app.py        # Interface gráfica (Tkinter)
 ├── seed.py           # Script para popular o banco com dados de teste
 ├── build.bat         # Script para gerar .exe (Windows)
+├── biblioteca.ico    # Ícone do executável
 ├── requirements.txt  # Dependências para build
 └── .gitignore
 ```
