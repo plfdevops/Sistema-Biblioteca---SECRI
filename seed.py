@@ -207,10 +207,11 @@ def popular():
     conn.commit()
 
     # Inserir livros
-    for titulo, autor, categoria, ano in LIVROS:
+    for i, (titulo, autor, categoria, ano) in enumerate(LIVROS, start=1):
+        codigo = f"{i:03d}"
         conn.execute(
-            "INSERT INTO livros (titulo, autor, categoria, ano) VALUES (?, ?, ?, ?)",
-            (titulo, autor, categoria, ano),
+            "INSERT INTO livros (titulo, autor, categoria, ano, codigo) VALUES (?, ?, ?, ?, ?)",
+            (titulo, autor, categoria, ano, codigo),
         )
     conn.commit()
 
