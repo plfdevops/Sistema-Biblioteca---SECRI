@@ -60,7 +60,7 @@ class App:
         # Filtro por status
         ttk.Label(frame_top, text="Status:").pack(side="left", padx=(10, 3))
         self.var_status = tk.StringVar(value="Todos")
-        combo_status = ttk.Combobox(frame_top, textvariable=self.var_status, width=12, state="readonly", values=["Todos", "Disponiveis", "Alugados"])
+        combo_status = ttk.Combobox(frame_top, textvariable=self.var_status, width=12, state="readonly", values=["Todos", "Disponiveis", "Alugados", "Pendentes"])
         combo_status.pack(side="left", padx=3)
         combo_status.bind("<<ComboboxSelected>>", lambda e: self._aplicar_filtros())
 
@@ -115,7 +115,9 @@ class App:
         if status == "Disponiveis":
             livros = [l for l in livros if l["disponivel"]]
         elif status == "Alugados":
-            livros = [l for l in livros if not l["disponivel"]]
+            livros = [l for l in livros if not l["disponivel"] and not services.esta_atrasado(l["id"])]
+        elif status == "Pendentes":
+            livros = [l for l in livros if not l["disponivel"] and services.esta_atrasado(l["id"])]
         self._atualizar_lista(livros)
 
     def _atualizar_lista(self, livros=None):
@@ -126,15 +128,15 @@ class App:
                 status = "Disponivel"
                 tag = "disponivel"
             elif services.esta_atrasado(l["id"]):
-                status = "ATRASADO"
-                tag = "atrasado"
+                status = "Pendente"
+                tag = "pendente"
             else:
                 status = "Alugado"
                 tag = "alugado"
             self.tree.insert("", "end", values=(l["id"], l["titulo"], l["autor"], l["categoria"] or "", l["ano"] or "", status), tags=(tag,))
         self.tree.tag_configure("disponivel", foreground=GREEN)
         self.tree.tag_configure("alugado", foreground=RED)
-        self.tree.tag_configure("atrasado", foreground=ORANGE)
+        self.tree.tag_configure("pendente", foreground=ORANGE)
         total = len(dados)
         alugados = sum(1 for l in dados if not l["disponivel"])
         self.status_var.set(f"Total: {total} livros | Disponiveis: {total - alugados} | Alugados: {alugados}")
@@ -170,7 +172,7 @@ class App:
         status_str = str(valores[5])
         if status_str == "Disponivel":
             status_color = GREEN
-        elif status_str == "ATRASADO":
+        elif status_str == "Pendente":
             status_color = ORANGE
         else:
             status_color = RED

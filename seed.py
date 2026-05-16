@@ -217,9 +217,35 @@ def popular():
     # Alugar alguns livros aleatoriamente (~30 livros alugados)
     livros = conn.execute("SELECT id FROM livros").fetchall()
     alugados = random.sample(livros, 30)
-    for livro in alugados:
+
+    # 10 com prazo vencido (atrasados)
+    for livro in alugados[:10]:
         pessoa = random.choice(PESSOAS)
-        dias_atras = random.randint(1, 30)
+        dias_atras = random.randint(15, 40)
+        prazo = random.randint(3, 7)
+        data = (date.today() - timedelta(days=dias_atras)).isoformat()
+        conn.execute(
+            "INSERT INTO emprestimos (livro_id, pessoa, data_retirada, prazo_dias) VALUES (?, ?, ?, ?)",
+            (livro["id"], pessoa, data, prazo),
+        )
+        conn.execute("UPDATE livros SET disponivel = 0 WHERE id = ?", (livro["id"],))
+
+    # 10 com prazo ainda no prazo
+    for livro in alugados[10:20]:
+        pessoa = random.choice(PESSOAS)
+        dias_atras = random.randint(1, 3)
+        prazo = random.randint(14, 30)
+        data = (date.today() - timedelta(days=dias_atras)).isoformat()
+        conn.execute(
+            "INSERT INTO emprestimos (livro_id, pessoa, data_retirada, prazo_dias) VALUES (?, ?, ?, ?)",
+            (livro["id"], pessoa, data, prazo),
+        )
+        conn.execute("UPDATE livros SET disponivel = 0 WHERE id = ?", (livro["id"],))
+
+    # 10 sem prazo definido
+    for livro in alugados[20:]:
+        pessoa = random.choice(PESSOAS)
+        dias_atras = random.randint(1, 20)
         data = (date.today() - timedelta(days=dias_atras)).isoformat()
         conn.execute(
             "INSERT INTO emprestimos (livro_id, pessoa, data_retirada) VALUES (?, ?, ?)",
