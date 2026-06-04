@@ -3,7 +3,6 @@ from datetime import date, timedelta
 
 
 def format_date(iso_date):
-    """Converte data ISO (aaaa-mm-dd) para formato brasileiro (dd/mm/aaaa)."""
     if not iso_date:
         return ""
     try:
@@ -14,7 +13,6 @@ def format_date(iso_date):
 
 
 def parse_date_br(date_str):
-    """Converte data brasileira (dd/mm/aaaa) para ISO (aaaa-mm-dd)."""
     if not date_str:
         return None
     parts = date_str.strip().split("/")

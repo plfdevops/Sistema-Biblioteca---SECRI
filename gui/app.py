@@ -323,7 +323,6 @@ class App:
         notebook = ttk.Notebook(win)
         notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # Aba: Livros mais alugados
         frame_books = tk.Frame(notebook, bg=BG_LIGHT)
         notebook.add(frame_books, text="Livros mais alugados")
         cols_b = ("Título", "Autor", "Empréstimos")
@@ -337,7 +336,6 @@ class App:
             tree_b.insert("", "end", values=(r["title"], r["author"], r["total"]))
         tree_b.pack(fill="both", expand=True)
 
-        # Aba: Alunos que mais alugaram
         frame_people = tk.Frame(notebook, bg=BG_LIGHT)
         notebook.add(frame_people, text="Alunos que mais alugaram")
         cols_p = ("Pessoa", "Empréstimos")
@@ -379,7 +377,6 @@ class App:
         elements.append(Paragraph(f"Gerado em: {date.today().strftime('%d/%m/%Y')}", styles["Normal"]))
         elements.append(Spacer(1, 20))
 
-        # Livros mais alugados
         elements.append(Paragraph("Livros Mais Alugados", styles["Heading2"]))
         data_books = [["Título", "Autor", "Empréstimos"]]
         for r in services.top_loaned_books():
@@ -396,7 +393,6 @@ class App:
         elements.append(t)
         elements.append(Spacer(1, 20))
 
-        # Alunos que mais alugaram
         elements.append(Paragraph("Alunos Que Mais Alugaram", styles["Heading2"]))
         data_people = [["Pessoa", "Empréstimos"]]
         for r in services.top_borrowers():

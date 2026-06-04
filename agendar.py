@@ -17,12 +17,10 @@ def schedule_linux(hour, minute):
     cmd = f'{python} -c "from notifier import send_overdue_notification; send_overdue_notification()"'
     cron_line = f"{minute} {hour} * * * cd {SCRIPT_DIR} && {cmd}"
 
-    # Verifica se já existe
     result = subprocess.run("crontab -l", shell=True, capture_output=True, text=True)
     current = result.stdout if result.returncode == 0 else ""
 
     if "send_overdue_notification" in current:
-        print("Cron já está configurado. Atualizando...")
         lines = [l for l in current.splitlines() if "send_overdue_notification" not in l]
         lines.append(cron_line)
     else:
@@ -41,10 +39,8 @@ def schedule_windows(hour, minute):
     task_name = "BibliotecaSECRI_Notificacao"
     cmd = f'cd /d {SCRIPT_DIR} && {python} -c "from notifier import send_overdue_notification; send_overdue_notification()"'
 
-    # Remove tarefa anterior se existir
     subprocess.run(f'schtasks /delete /tn {task_name} /f', shell=True, capture_output=True)
 
-    # Cria nova tarefa
     result = subprocess.run(
         f'schtasks /create /tn {task_name} /tr "cmd /c {cmd}" /sc daily /st {hour:02d}:{minute:02d} /f',
         shell=True, capture_output=True, text=True

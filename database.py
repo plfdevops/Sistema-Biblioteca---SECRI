@@ -35,7 +35,6 @@ def init_db():
             FOREIGN KEY (book_id) REFERENCES books(id)
         );
     """)
-    # Migração: adicionar coluna deadline_date se não existir (bancos antigos)
     try:
         conn.execute("ALTER TABLE loans ADD COLUMN deadline_date TEXT")
     except Exception:
