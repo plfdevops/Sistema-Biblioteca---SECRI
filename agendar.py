@@ -1,13 +1,3 @@
-"""
-Agenda o envio diário de notificações de atraso.
-Uso: python3 agendar.py
-
-Configuração no config.json:
-  "schedule_time": "08:00"
-  "platform": "auto"   (auto | linux | windows)
-
-'auto' detecta o sistema operacional automaticamente.
-"""
 import json
 import os
 import subprocess
