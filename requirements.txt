@@ -1,1 +1,2 @@
 pyinstaller==6.11.1
+reportlab==4.5.1

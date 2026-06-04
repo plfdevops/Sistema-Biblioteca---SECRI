@@ -31,8 +31,14 @@ def init_db():
             loan_date TEXT NOT NULL,
             return_date TEXT,
             deadline_days INTEGER,
+            deadline_date TEXT,
             FOREIGN KEY (book_id) REFERENCES books(id)
         );
     """)
+    # Migração: adicionar coluna deadline_date se não existir (bancos antigos)
+    try:
+        conn.execute("ALTER TABLE loans ADD COLUMN deadline_date TEXT")
+    except Exception:
+        pass
     conn.commit()
     conn.close()

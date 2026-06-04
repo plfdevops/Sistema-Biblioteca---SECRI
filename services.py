@@ -2,6 +2,28 @@ from database import get_connection
 from datetime import date, timedelta
 
 
+def format_date(iso_date):
+    """Converte data ISO (aaaa-mm-dd) para formato brasileiro (dd/mm/aaaa)."""
+    if not iso_date:
+        return ""
+    try:
+        d = date.fromisoformat(iso_date)
+        return d.strftime("%d/%m/%Y")
+    except (ValueError, TypeError):
+        return iso_date
+
+
+def parse_date_br(date_str):
+    """Converte data brasileira (dd/mm/aaaa) para ISO (aaaa-mm-dd)."""
+    if not date_str:
+        return None
+    parts = date_str.strip().split("/")
+    if len(parts) != 3:
+        raise ValueError("Formato inválido. Use dd/mm/aaaa")
+    d, m, y = parts
+    return f"{y}-{m.zfill(2)}-{d.zfill(2)}"
+
+
 def add_book(title, author, category=None, year=None, code=None):
     conn = get_connection()
     conn.execute(
@@ -37,18 +59,18 @@ def get_book(book_id):
     return dict(row) if row else None
 
 
-def loan_book(book_id, person, deadline_days=None):
+def loan_book(book_id, person, deadline_date=None):
     conn = get_connection()
     book = conn.execute("SELECT available FROM books WHERE id = ?", (book_id,)).fetchone()
     if not book:
         conn.close()
-        raise ValueError("Livro nao encontrado")
+        raise ValueError("Livro não encontrado")
     if not book["available"]:
         conn.close()
-        raise ValueError("Livro ja esta alugado")
+        raise ValueError("Livro já está alugado")
     conn.execute(
-        "INSERT INTO loans (book_id, person, loan_date, deadline_days) VALUES (?, ?, ?, ?)",
-        (book_id, person, date.today().isoformat(), deadline_days),
+        "INSERT INTO loans (book_id, person, loan_date, deadline_date) VALUES (?, ?, ?, ?)",
+        (book_id, person, date.today().isoformat(), deadline_date),
     )
     conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book_id,))
     conn.commit()
@@ -119,8 +141,39 @@ def active_loan(book_id):
 
 def is_overdue(book_id):
     loan = active_loan(book_id)
-    if not loan or not loan["deadline_days"]:
+    if not loan or not loan.get("deadline_date"):
         return False
-    loan_date = date.fromisoformat(loan["loan_date"])
-    deadline = loan_date + timedelta(days=loan["deadline_days"])
+    deadline = date.fromisoformat(loan["deadline_date"])
     return date.today() > deadline
+
+
+def top_loaned_books(limit=10):
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT b.title, b.author, COUNT(l.id) as total
+        FROM loans l JOIN books b ON l.book_id = b.id
+        GROUP BY l.book_id ORDER BY total DESC LIMIT ?
+    """, (limit,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def top_borrowers(limit=10):
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT person, COUNT(id) as total
+        FROM loans GROUP BY person ORDER BY total DESC LIMIT ?
+    """, (limit,)).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def overdue_loans():
+    conn = get_connection()
+    rows = conn.execute("""
+        SELECT l.*, b.title FROM loans l JOIN books b ON l.book_id = b.id
+        WHERE l.return_date IS NULL AND l.deadline_date IS NOT NULL
+    """).fetchall()
+    conn.close()
+    today = date.today()
+    return [dict(r) for r in rows if date.fromisoformat(r["deadline_date"]) < today]

@@ -217,22 +217,22 @@ def populate():
     for book in loaned[:10]:
         person = random.choice(PEOPLE)
         days_ago = random.randint(15, 40)
-        deadline = random.randint(3, 7)
         loan_date = (date.today() - timedelta(days=days_ago)).isoformat()
+        deadline_date = (date.today() - timedelta(days=random.randint(1, 10))).isoformat()
         conn.execute(
-            "INSERT INTO loans (book_id, person, loan_date, deadline_days) VALUES (?, ?, ?, ?)",
-            (book["id"], person, loan_date, deadline),
+            "INSERT INTO loans (book_id, person, loan_date, deadline_date) VALUES (?, ?, ?, ?)",
+            (book["id"], person, loan_date, deadline_date),
         )
         conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
     for book in loaned[10:20]:
         person = random.choice(PEOPLE)
         days_ago = random.randint(1, 3)
-        deadline = random.randint(14, 30)
         loan_date = (date.today() - timedelta(days=days_ago)).isoformat()
+        deadline_date = (date.today() + timedelta(days=random.randint(7, 30))).isoformat()
         conn.execute(
-            "INSERT INTO loans (book_id, person, loan_date, deadline_days) VALUES (?, ?, ?, ?)",
-            (book["id"], person, loan_date, deadline),
+            "INSERT INTO loans (book_id, person, loan_date, deadline_date) VALUES (?, ?, ?, ?)",
+            (book["id"], person, loan_date, deadline_date),
         )
         conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 

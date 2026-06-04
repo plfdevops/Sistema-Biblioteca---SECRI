@@ -4,3 +4,4 @@ biblioteca.db
 dist/
 build/
 *.spec
+config.json
