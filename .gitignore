@@ -1,7 +1,6 @@
 __pycache__/
 *.pyc
-biblioteca.db
-dist/
-build/
-*.spec
-config.json
+data/
+.env
+.pytest_cache/
+.ruff_cache/

@@ -1,0 +1,9 @@
+.git
+__pycache__
+tests
+.kiro
+*.pyc
+data
+.env
+.pytest_cache
+.ruff_cache

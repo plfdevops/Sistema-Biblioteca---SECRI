@@ -188,10 +188,21 @@ BOOKS = [
 ]
 
 PEOPLE = [
-    "Ana Silva", "Carlos Oliveira", "Maria Santos", "Joao Pereira",
-    "Fernanda Costa", "Pedro Souza", "Juliana Lima", "Rafael Almeida",
-    "Beatriz Ferreira", "Lucas Rodrigues", "Camila Martins", "Bruno Araujo",
-    "Larissa Gomes", "Thiago Ribeiro", "Amanda Carvalho",
+    ("Ana Silva", "ana.silva@edu.ufes.br"),
+    ("Carlos Oliveira", "carlos.oliveira@edu.ufes.br"),
+    ("Maria Santos", "maria.santos@edu.ufes.br"),
+    ("Joao Pereira", "joao.pereira@edu.ufes.br"),
+    ("Fernanda Costa", "fernanda.costa@edu.ufes.br"),
+    ("Pedro Souza", "pedro.souza@edu.ufes.br"),
+    ("Juliana Lima", "juliana.lima@edu.ufes.br"),
+    ("Rafael Almeida", "rafael.almeida@edu.ufes.br"),
+    ("Beatriz Ferreira", "beatriz.ferreira@edu.ufes.br"),
+    ("Lucas Rodrigues", "lucas.rodrigues@edu.ufes.br"),
+    ("Camila Martins", "camila.martins@edu.ufes.br"),
+    ("Bruno Araujo", "bruno.araujo@edu.ufes.br"),
+    ("Larissa Gomes", "larissa.gomes@edu.ufes.br"),
+    ("Thiago Ribeiro", "thiago.ribeiro@edu.ufes.br"),
+    ("Amanda Carvalho", "amanda.carvalho@edu.ufes.br"),
 ]
 
 
@@ -215,41 +226,41 @@ def populate():
     loaned = random.sample(books, 30)
 
     for book in loaned[:10]:
-        person = random.choice(PEOPLE)
+        person, email = random.choice(PEOPLE)
         days_ago = random.randint(15, 40)
         loan_date = (date.today() - timedelta(days=days_ago)).isoformat()
         deadline_date = (date.today() - timedelta(days=random.randint(1, 10))).isoformat()
         conn.execute(
-            "INSERT INTO loans (book_id, person, loan_date, deadline_date) VALUES (?, ?, ?, ?)",
-            (book["id"], person, loan_date, deadline_date),
+            "INSERT INTO loans (book_id, person, loan_date, deadline_date, email) VALUES (?, ?, ?, ?, ?)",
+            (book["id"], person, loan_date, deadline_date, email),
         )
         conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
     for book in loaned[10:20]:
-        person = random.choice(PEOPLE)
+        person, email = random.choice(PEOPLE)
         days_ago = random.randint(1, 3)
         loan_date = (date.today() - timedelta(days=days_ago)).isoformat()
         deadline_date = (date.today() + timedelta(days=random.randint(7, 30))).isoformat()
         conn.execute(
-            "INSERT INTO loans (book_id, person, loan_date, deadline_date) VALUES (?, ?, ?, ?)",
-            (book["id"], person, loan_date, deadline_date),
+            "INSERT INTO loans (book_id, person, loan_date, deadline_date, email) VALUES (?, ?, ?, ?, ?)",
+            (book["id"], person, loan_date, deadline_date, email),
         )
         conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
     for book in loaned[20:]:
-        person = random.choice(PEOPLE)
+        person, email = random.choice(PEOPLE)
         days_ago = random.randint(1, 20)
         loan_date = (date.today() - timedelta(days=days_ago)).isoformat()
         conn.execute(
-            "INSERT INTO loans (book_id, person, loan_date) VALUES (?, ?, ?)",
-            (book["id"], person, loan_date),
+            "INSERT INTO loans (book_id, person, loan_date, email) VALUES (?, ?, ?, ?)",
+            (book["id"], person, loan_date, email),
         )
         conn.execute("UPDATE books SET available = 0 WHERE id = ?", (book["id"],))
 
     available = conn.execute("SELECT id FROM books WHERE available = 1").fetchall()
     history_books = random.sample(available, 50)
     for book in history_books:
-        person = random.choice(PEOPLE)
+        person, _ = random.choice(PEOPLE)
         days_loan = random.randint(30, 90)
         days_return = random.randint(1, 29)
         loan_date = (date.today() - timedelta(days=days_loan)).isoformat()

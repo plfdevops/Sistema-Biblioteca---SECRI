@@ -1,112 +1,86 @@
-# Sistema de Biblioteca - SECRI
+# Biblioteca SECRI
 
-Sistema de gerenciamento de biblioteca desenvolvido para o projeto de extensão da faculdade. Permite controlar o acervo de livros, empréstimos e devoluções de forma simples e visual.
-
-![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python&logoColor=white)
-![SQLite](https://img.shields.io/badge/Banco-SQLite-green?logo=sqlite&logoColor=white)
-![Tkinter](https://img.shields.io/badge/Interface-Tkinter-orange)
-![License](https://img.shields.io/badge/Licença-MIT-yellow)
-
----
-
-## Funcionalidades
-
-- **Cadastro de livros** — título, autor, categoria e ano
-- **Remoção de livros** — com confirmação e limpeza do histórico
-- **Empréstimo (aluguel)** — registra quem retirou e a data
-- **Devolução** — marca a data de retorno automaticamente
-- **Busca** — por título, autor ou categoria
-- **Detalhes do livro** — duplo clique para ver histórico completo de empréstimos
-- **Status visual** — livros disponíveis em verde, alugados em vermelho
-- **Barra de status** — contagem total, disponíveis e alugados
-
----
+Sistema de gerenciamento de biblioteca com interface web moderna.
 
 ## Como rodar
 
-### Pré-requisitos
-
-- Python 3.8 ou superior
-
-### No Windows
-
 ```bash
-git clone https://github.com/plfdevops/Sistema-Biblioteca---SECRI.git
-cd Sistema-Biblioteca---SECRI
-python main.py
+docker compose up -d
 ```
 
-### No Linux
+Acesse: **http://localhost:8080**
+
+O container reinicia automaticamente se a máquina reiniciar.
+
+## Funcionalidades
+
+- Cadastro de livros (título, autor, categoria, ano, código)
+- Empréstimo com prazo de devolução e e-mail do aluno
+- Devolução com confirmação
+- Renovação de empréstimo
+- Detecção automática de atrasos
+- Notificação por e-mail para alunos com atraso (a cada 1h, cooldown de 7 dias)
+- Notificação manual para o gestor (relatório consolidado)
+- Cadastro de alunos (página /alunos) com autocomplete no empréstimo
+- Busca por título, autor ou categoria
+- Filtros por categoria e status
+- Relatórios (top livros, top alunos)
+- Exportação de relatório em PDF
+- Dashboard com métricas (total, disponíveis, alugados, atrasados, devoluções/mês)
+
+## Configuração
+
+Copie `.env.example` para `.env` e preencha:
 
 ```bash
-git clone https://github.com/plfdevops/Sistema-Biblioteca---SECRI.git
-cd Sistema-Biblioteca---SECRI
-sudo apt install python3-tk
-python3 main.py
+cp .env.example .env
 ```
-
----
-
-## Gerar executável (.exe) para Windows
-
-```bash
-build.bat
-```
-
-O executável será gerado em `dist/Biblioteca.exe`. Basta copiar para qualquer PC com Windows e rodar — não precisa instalar Python.
-
----
 
 ## Popular com dados de teste
 
-Para testar o sistema com ~180 livros de exemplo:
+```bash
+docker exec library-biblioteca-1 python seed.py
+```
+
+## Rodar testes
 
 ```bash
-python seed.py
+docker run --rm -v $(pwd):/app -w /app python:3.11-slim sh -c \
+  "pip install -q pytest reportlab nicegui && pytest tests/ -v"
 ```
 
-Isso cria livros de diversas categorias (Romance, Fantasia, Terror, Ficção Científica, etc.) com alguns já alugados e com histórico de devoluções.
-
----
-
-## Sobre o banco de dados
-
-O banco `biblioteca.db` é criado automaticamente na primeira vez que o sistema é aberto. Ele fica salvo **na mesma pasta** do programa.
-
-- Cada máquina tem o seu próprio banco — os dados não são compartilhados entre computadores
-- Se quiser transferir os dados para outro PC, basta copiar o arquivo `biblioteca.db` junto com o executável
-- O arquivo `biblioteca.db` **não sobe pro GitHub** (está no `.gitignore`) — cada instalação começa vazia
-
----
-
-## Estrutura do projeto
+## Estrutura
 
 ```
-├── main.py           # Ponto de entrada da aplicação
-├── database.py       # Conexão e criação do banco SQLite
-├── services.py       # Lógica de negócio (CRUD, empréstimos)
-├── gui/
-│   └── app.py        # Interface gráfica (Tkinter)
-├── seed.py           # Script para popular o banco com dados de teste
-├── build.bat         # Script para gerar .exe (Windows)
-├── biblioteca.ico    # Ícone do executável
-├── requirements.txt  # Dependências para build
-└── .gitignore
+├── src/
+│   ├── main.py              # Servidor NiceGUI
+│   ├── database.py          # Banco SQLite + migrations
+│   ├── notifier.py          # Envio de e-mails
+│   ├── services/
+│   │   ├── books.py         # CRUD livros
+│   │   ├── loans.py         # Empréstimos, devoluções, renovação
+│   │   ├── students.py      # CRUD alunos
+│   │   ├── stats.py         # Dashboard
+│   │   └── utils.py         # Formatação, validação
+│   └── gui/
+│       ├── app.py           # Rotas
+│       ├── library.py       # Página principal
+│       ├── dialogs.py       # Diálogos (adicionar, editar, alugar...)
+│       ├── students.py      # Página de alunos
+│       └── pdf.py           # Exportação PDF
+├── tests/                   # 52 testes (pytest)
+├── data/                    # Banco SQLite (volume Docker, gitignored)
+├── seed.py                  # Dados de teste
+├── Dockerfile
+├── docker-compose.yml
+├── .env.example
+└── README.md
 ```
 
----
+## Stack
 
-## Tecnologias
-
-| Componente | Tecnologia |
-|-----------|-----------|
-| Linguagem | Python 3 |
-| Interface | Tkinter |
-| Banco de dados | SQLite |
-| Build | PyInstaller |
-
----
-
-## Sobre
-
-Desenvolvido para o projeto de extensão **SECRI** como ferramenta de gestão do acervo da biblioteca.
+- Python 3.11
+- NiceGUI (interface web)
+- SQLite (banco de dados)
+- ReportLab (PDF)
+- Docker (deploy)
