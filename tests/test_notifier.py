@@ -71,11 +71,9 @@ class TestSendStudentNotifications:
         past = (date.today() - timedelta(days=10)).isoformat()
         services.loan_book(book_id, "P", past, "a@x.com")
 
-        # Primeiro envio
         notifier.send_student_notifications()
         mock_server.sendmail.reset_mock()
 
-        # Segundo envio — deve respeitar cooldown
         sent = notifier.send_student_notifications()
         assert sent == 0
 
@@ -91,6 +89,5 @@ class TestSendStudentNotifications:
 
         sent = notifier.send_student_notifications()
         assert sent == 0
-        # notified_at should NOT be set
         loan = services.active_loan(book_id)
         assert loan["notified_at"] is None

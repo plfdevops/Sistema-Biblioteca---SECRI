@@ -9,7 +9,6 @@ import database
 
 @pytest.fixture(autouse=True)
 def temp_db(tmp_path, monkeypatch):
-    """Usa banco temporário para cada teste."""
     db_path = str(tmp_path / "test.db")
     monkeypatch.setattr(database, "DB_PATH", db_path)
     database.init_db()

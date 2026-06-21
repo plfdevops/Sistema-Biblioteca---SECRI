@@ -14,7 +14,6 @@ def get_connection():
 
 @contextmanager
 def get_db():
-    """Context manager: auto-commit on success, auto-close always."""
     conn = get_connection()
     try:
         yield conn

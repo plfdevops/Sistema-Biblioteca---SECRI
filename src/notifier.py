@@ -39,7 +39,6 @@ def _send_email(smtp_cfg, to, subject, body):
 
 
 def send_manager_notification():
-    """Envia relatório consolidado de atrasos para os e-mails do gestor."""
     loans = overdue_loans()
     if not loans:
         return "Nenhum atraso encontrado."
@@ -60,7 +59,6 @@ def send_manager_notification():
 
 
 def send_student_notifications():
-    """Envia e-mail individual para cada aluno com empréstimo atrasado (respeitando cooldown)."""
     loans = overdue_loans()
     if not loans:
         return 0
