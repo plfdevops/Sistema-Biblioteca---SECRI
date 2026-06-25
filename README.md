@@ -39,7 +39,7 @@ cp .env.example .env
 ## Popular com dados de teste
 
 ```bash
-docker exec library-biblioteca-1 python seed.py
+docker exec -e PYTHONPATH=/app/src 3d8731247171 python /app/seed.py
 ```
 
 ## Rodar testes
